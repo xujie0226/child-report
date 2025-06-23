@@ -1,101 +1,147 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
-  <meta charset="utf-8">
-  <title>儿童能力测评报告</title>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <meta charset="UTF-8">
+  <title>儿童发展报告查询</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: "Microsoft YaHei", sans-serif;
-      padding: 20px;
-    }
-    .report-container {
-      width: 700px;
-      margin: 0 auto;
-    }
-    #chart {
-      width: 600px;
-      height: 500px;
-      margin: 0 auto;
-    }
-    .section {
-      margin-top: 20px;
-    }
-    .bold {
-      font-weight: bold;
-    }
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
-    }
+    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+    input, select, button { font-size: 16px; padding: 6px; margin: 6px 0; width: 100%; }
+    .result { margin-top: 20px; }
+    canvas { width: 100% !important; height: auto !important; }
   </style>
 </head>
 <body>
-<div class="report-container" id="report">
-  <div class="section">
-    <label>幼儿园：</label>
-    <span id="school-name">一二三幸福力</span><br>
-    <label>儿童姓名：</label>
-    <span id="child-name">浦斌</span>
-  </div>
-  <div class="section" id="scores">
-    <p><span class="bold">记忆力 (Z=-0.77)：</span>记忆力发展正常，可通过规律重复和趣味游戏巩固。</p>
-    <p><span class="bold">语言 (Z=-0.15)：</span>语言能力一般，建议每天固定时间对话与阅读。</p>
-    <p><span class="bold">数学 (Z=-0.14)：</span>数学能力中等，建议多接触分类、排序和数字活动。</p>
-    <p><span class="bold">延迟满足 (Z=2.18)：</span>具备良好自控力，可引导完成更长时间任务。</p>
-    <p><span class="bold">灵活性 (Z=2.16)：</span>认知灵活性佳，适合多任务转换与变换练习。</p>
-  </div>
-  <div class="section">
-    <div id="chart"></div>
-  </div>
+  <h2>儿童发展报告查询</h2>
+  <label>选择幼儿园：</label>
+  <select id="kindergarten"></select>
+  <label>输入孩子姓名：</label>
+  <input type="text" id="childName" placeholder="例如：张小明">
+  <button onclick="query()">查询</button>
+
+  <div class="result" id="output"></div>
+  <div id="report-section">
+  <div id="output"></div>
+  <canvas id="radarChart"></canvas>
 </div>
-<div style="text-align:center;">
-  <button onclick="exportPDF()">导出PDF报告</button>
+<div style="text-align: center;">
+  <button onclick="downloadPDF()">导出PDF报告</button>
 </div>
 
-<script>
-  const chart = echarts.init(document.getElementById('chart'));
-  const option = {
-    title: {
-      text: '浦斌 的能力图',
-      left: 'center'
-    },
-    radar: {
-      indicator: [
-        { name: '记忆力', max: 2.5, min: -2.5 },
-        { name: '语言', max: 2.5, min: -2.5 },
-        { name: '数学', max: 2.5, min: -2.5 },
-        { name: '延迟满足', max: 2.5, min: -2.5 },
-        { name: '灵活性', max: 2.5, min: -2.5 }
-      ]
-    },
-    series: [{
-      type: 'radar',
-      data: [{
-        value: [-0.77, -0.15, -0.14, 2.18, 2.16],
-        name: '能力'
-      }]
-    }]
-  };
-  chart.setOption(option);
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="data.js"></script>
+  <script>
+    const suggestions = {
+      "Z记忆力": {
+        high: "记忆力优秀，建议增加图形记忆、倒背故事等挑战性训练。",
+        medium: "记忆力发展正常，可通过规律重复和趣味游戏巩固。",
+        low: "记忆力较弱，建议采用图像辅助、分类法等增强训练。"
+      },
+      "Z语言": {
+        high: "语言能力强，适合讲故事、参与辩论式亲子活动。",
+        medium: "语言能力一般，建议每天固定时间对话与阅读。",
+        low: "语言发展需加强，可使用图画书互动和复述训练。"
+      },
+      "Z数学": {
+        high: "数学理解力好，建议适当引入数字逻辑类游戏。",
+        medium: "数学能力中等，建议多接触分类、排序和数字活动。",
+        low: "数学发展偏弱，建议从数数、图形配对入手训练。"
+      },
+      "Z延迟满足": {
+        high: "具备良好自控力，可引导完成更长时间任务。",
+        medium: "延迟满足能力一般，可通过奖励延时小游戏训练。",
+        low: "自控力待提升，建议从短时等待练习逐步增加。"
+      },
+      "Z灵活性": {
+        high: "认知灵活性佳，适合多任务转移与变换练习。",
+        medium: "灵活性发展正常，建议多玩变换规则类游戏。",
+        low: "灵活性较弱，可从简单规则转变游戏逐步引导。"
+      }
+    };
 
-  async function exportPDF() {
-    const { jsPDF } = window.jspdf;
-    const reportEl = document.getElementById("report");
-    const canvas = await html2canvas(reportEl, { scale: 2 });
-    const imgData = canvas.toDataURL('image/jpeg', 1.0);
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth() - 20;
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    pdf.addImage(imgData, 'JPEG', 10, 10, pdfWidth, pdfHeight);
-    const school = document.getElementById("school-name").textContent;
-    const name = document.getElementById("child-name").textContent;
-    pdf.save(`${school}_${name}.pdf`);
-  }
-</script>
+    let chart;
+
+    function query() {
+      const kg = document.getElementById("kindergarten").value;
+      const name = document.getElementById("childName").value.trim();
+      const output = document.getElementById("output");
+      output.innerHTML = "";
+
+      if (!data[kg] || !data[kg][name]) {
+        output.textContent = "未找到该儿童的数据。";
+        if (chart) chart.destroy();
+        return;
+      }
+
+      const scores = data[kg][name];
+      const labels = Object.keys(scores);
+      const zValues = labels.map(key => scores[key]);
+
+      // 分级与建议
+      labels.forEach(key => {
+        const z = scores[key];
+        let level = "medium";
+        if (z >= 1) level = "high";
+        else if (z <= -1) level = "low";
+        const text = `<p><b>${key.replace("Z","")}</b>（Z=${z.toFixed(2)}）：${suggestions[key][level]}</p>`;
+        output.innerHTML += text;
+      });
+
+      // 雷达图绘制
+      if (chart) chart.destroy();
+      const ctx = document.getElementById("radarChart");
+      chart = new Chart(ctx, {
+        type: "radar",
+        data: {
+          labels: labels.map(k => k.replace("Z","")),
+          datasets: [{
+            label: `${name} 的能力图`,
+            data: zValues,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            r: {
+              suggestedMin: -2,
+              suggestedMax: 2
+            }
+          }
+        }
+      });
+    }
+
+    // 页面初始化：填充幼儿园名称
+    window.onload = function() {
+      const kgSelect = document.getElementById("kindergarten");
+      for (let kg in data) {
+        const opt = document.createElement("option");
+        opt.value = kg;
+        opt.textContent = kg;
+        kgSelect.appendChild(opt);
+      }
+    };
+  </script>
 </body>
 </html>
+
+<script>
+  async function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const section = document.getElementById("report-section");
+    const canvas = await html2canvas(section, { scale: 3 });
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const width = pdf.internal.pageSize.getWidth() - 20;
+    const height = canvas.height * width / canvas.width;
+    pdf.addImage(imgData, 'JPEG', 10, 10, width, height);
+
+    const kg = document.getElementById("kindergarten").value || "幼儿园";
+    const name = document.getElementById("childName").value.trim() || "姓名";
+    pdf.save(`${kg}_${name}_测评报告.pdf`);
+  }
+</script>
