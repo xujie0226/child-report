@@ -22,7 +22,25 @@
   <button onclick="query()">查询</button>
 
   <div class="result" id="output"></div>
+  <div id="report-section">
   <canvas id="radarChart"></canvas>
+  <p style="color: gray; font-size: 12px;">⚠ 若下载失败，请点击右上角 ··· 在浏览器中打开</p>
+</div>
+<button onclick="downloadPDF()" style="margin-top: 20px;">📄 下载测评报告</button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+<script>
+  function downloadPDF() {
+    const element = document.getElementById('report-section');
+    const opt = {
+      margin:       0.5,
+      filename:     '测评报告.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
+  }
+</script>
 
   <script src="data.js"></script>
   <script>
