@@ -2,146 +2,137 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>儿童发展报告查询</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    input, select, button { font-size: 16px; padding: 6px; margin: 6px 0; width: 100%; }
-    .result { margin-top: 20px; }
-    canvas { width: 100% !important; height: auto !important; }
-  </style>
+    <meta charset="UTF-8">
+    <title>儿童测评查询</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="data.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; }
+        select, input, button { margin: 10px 5px; padding: 5px; font-size: 16px; }
+        canvas { max-width: 100%; }
+        .high { color: green; font-weight: bold; }
+        .mid { color: orange; }
+        .low { color: red; font-weight: bold; }
+    </style>
 </head>
 <body>
-  <h2>儿童发展报告查询</h2>
-  <label>选择幼儿园：</label>
-  <select id="kindergarten"></select>
-  <label>输入孩子姓名：</label>
-  <input type="text" id="childName" placeholder="例如：张小明">
-  <button onclick="query()">查询</button>
+    <h2>儿童测评结果查询</h2>
+    <label>幼儿园：</label>
+    <select id="kindergarten"></select>
+    <label>姓名：</label>
+    <input type="text" id="childName" placeholder="请输入姓名">
+    <button onclick="search()">查询</button>
+    <button onclick="downloadPDF()">导出PDF报告</button>
 
-  <div class="result" id="output"></div>
-  <div id="report-section">
-  <div id="output"></div>
-  <canvas id="radarChart"></canvas>
-</div>
-<div style="text-align: center;">
-  <button onclick="downloadPDF()">导出PDF报告</button>
-</div>
+    <div id="report-section">
+        <h3 id="childTitle"></h3>
+        <div id="resultText"></div>
+        <canvas id="radarChart"></canvas>
+    </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="data.js"></script>
-  <script>
-    const suggestions = {
-      "Z记忆力": {
-        high: "记忆力优秀，建议增加图形记忆、倒背故事等挑战性训练。",
-        medium: "记忆力发展正常，可通过规律重复和趣味游戏巩固。",
-        low: "记忆力较弱，建议采用图像辅助、分类法等增强训练。"
-      },
-      "Z语言": {
-        high: "语言能力强，适合讲故事、参与辩论式亲子活动。",
-        medium: "语言能力一般，建议每天固定时间对话与阅读。",
-        low: "语言发展需加强，可使用图画书互动和复述训练。"
-      },
-      "Z数学": {
-        high: "数学理解力好，建议适当引入数字逻辑类游戏。",
-        medium: "数学能力中等，建议多接触分类、排序和数字活动。",
-        low: "数学发展偏弱，建议从数数、图形配对入手训练。"
-      },
-      "Z延迟满足": {
-        high: "具备良好自控力，可引导完成更长时间任务。",
-        medium: "延迟满足能力一般，可通过奖励延时小游戏训练。",
-        low: "自控力待提升，建议从短时等待练习逐步增加。"
-      },
-      "Z灵活性": {
-        high: "认知灵活性佳，适合多任务转移与变换练习。",
-        medium: "灵活性发展正常，建议多玩变换规则类游戏。",
-        low: "灵活性较弱，可从简单规则转变游戏逐步引导。"
-      }
-    };
-
-    let chart;
-
-    function query() {
-      const kg = document.getElementById("kindergarten").value;
-      const name = document.getElementById("childName").value.trim();
-      const output = document.getElementById("output");
-      output.innerHTML = "";
-
-      if (!data[kg] || !data[kg][name]) {
-        output.textContent = "未找到该儿童的数据。";
-        if (chart) chart.destroy();
-        return;
-      }
-
-      const scores = data[kg][name];
-      const labels = Object.keys(scores);
-      const zValues = labels.map(key => scores[key]);
-
-      // 分级与建议
-      labels.forEach(key => {
-        const z = scores[key];
-        let level = "medium";
-        if (z >= 1) level = "high";
-        else if (z <= -1) level = "low";
-        const text = `<p><b>${key.replace("Z","")}</b>（Z=${z.toFixed(2)}）：${suggestions[key][level]}</p>`;
-        output.innerHTML += text;
-      });
-
-      // 雷达图绘制
-      if (chart) chart.destroy();
-      const ctx = document.getElementById("radarChart");
-      chart = new Chart(ctx, {
-        type: "radar",
-        data: {
-          labels: labels.map(k => k.replace("Z","")),
-          datasets: [{
-            label: `${name} 的能力图`,
-            data: zValues,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            r: {
-              suggestedMin: -2,
-              suggestedMax: 2
+    <script>
+        const kgSelect = document.getElementById("kindergarten");
+        window.onload = function() {
+            for (const kg in data) {
+                if (kg !== "NaN") {
+                    const option = document.createElement("option");
+                    option.value = kg;
+                    option.text = kg;
+                    kgSelect.appendChild(option);
+                }
             }
-          }
-        }
-      });
-    }
+        };
 
-    // 页面初始化：填充幼儿园名称
-    window.onload = function() {
-      const kgSelect = document.getElementById("kindergarten");
-      for (let kg in data) {
-        const opt = document.createElement("option");
-        opt.value = kg;
-        opt.textContent = kg;
-        kgSelect.appendChild(opt);
-      }
-    };
-  </script>
+        let chart = null;
+        function getLevel(z) {
+            if (z >= 1) return "高";
+            if (z <= -1) return "低";
+            return "中";
+        }
+
+        function search() {
+            const kg = document.getElementById("kindergarten").value;
+            const name = document.getElementById("childName").value.trim();
+            const child = data[kg]?.[name];
+            const output = document.getElementById("resultText");
+            const title = document.getElementById("childTitle");
+            if (!child) {
+                output.innerHTML = "<p style='color:red;'>未找到该儿童数据，请检查输入。</p>";
+                title.innerHTML = "";
+                if (chart) chart.destroy();
+                return;
+            }
+            title.innerHTML = `${kg} - ${name} 的测评报告`;
+
+            const dimensions = ["Z记忆力", "Z语言", "Z数学", "Z延迟满足", "Z灵活性"];
+            const labels = ["记忆力", "语言", "数学", "延迟满足", "灵活性"];
+            const suggestions = {
+                "Z记忆力": ["可以尝试通过记忆游戏或讲故事提升记忆力", "继续保持，适当挑战复杂任务", "提供结构化帮助，例如重复演练"],
+                "Z语言": ["建议增加语言互动，如共读、讲述", "语言发展良好，建议持续支持", "需要关注语言表达，鼓励多说"],
+                "Z数学": ["可开展分类、数数等早期活动", "数学能力适中，建议游戏化支持", "鼓励使用积木、排序等操作提升数学感知"],
+                "Z延迟满足": ["建议使用等待游戏增强控制力", "有一定延迟满足能力，继续鼓励", "可逐步训练等待和转移注意"],
+                "Z灵活性": ["进行规则变换游戏可促进灵活性", "认知灵活性较好，继续锻炼", "尝试情境变化任务帮助适应"]
+            };
+
+            let html = "<ul>";
+            let zData = [];
+
+            for (let i = 0; i < dimensions.length; i++) {
+                const dim = dimensions[i];
+                const z = child[dim];
+                if (typeof z !== "number") continue;
+                zData.push(z.toFixed(2));
+                const level = getLevel(z);
+                const suggestion = suggestions[dim][level === "高" ? 1 : level === "中" ? 1 : 2];
+                const cls = level === "高" ? "high" : level === "低" ? "low" : "mid";
+                html += `<li><span class="${cls}">${labels[i]}：${level}</span>（Z=${z.toFixed(2)}）—— ${suggestion}</li>`;
+            }
+            html += "</ul>";
+            output.innerHTML = html;
+
+            if (chart) chart.destroy();
+            const ctx = document.getElementById("radarChart").getContext("2d");
+            chart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Z分数",
+                        data: zData,
+                        fill: true,
+                        pointBackgroundColor: "blue",
+                        borderColor: "blue"
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            min: -3,
+                            max: 3,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const section = document.getElementById("report-section");
+            const canvas = await html2canvas(section, { scale: 3 });
+            const imgData = canvas.toDataURL("image/jpeg", 1.0);
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const width = pdf.internal.pageSize.getWidth() - 20;
+            const height = canvas.height * width / canvas.width;
+            pdf.addImage(imgData, 'JPEG', 10, 10, width, height);
+
+            const kg = document.getElementById("kindergarten").value || "幼儿园";
+            const name = document.getElementById("childName").value.trim() || "姓名";
+            pdf.save(`${kg}_${name}_测评报告.pdf`);
+        }
+    </script>
 </body>
 </html>
-
-<script>
-  async function downloadPDF() {
-    const { jsPDF } = window.jspdf;
-    const section = document.getElementById("report-section");
-    const canvas = await html2canvas(section, { scale: 3 });
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const width = pdf.internal.pageSize.getWidth() - 20;
-    const height = canvas.height * width / canvas.width;
-    pdf.addImage(imgData, 'JPEG', 10, 10, width, height);
-
-    const kg = document.getElementById("kindergarten").value || "幼儿园";
-    const name = document.getElementById("childName").value.trim() || "姓名";
-    pdf.save(`${kg}_${name}_测评报告.pdf`);
-  }
-</script>
