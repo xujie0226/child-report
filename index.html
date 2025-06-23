@@ -31,11 +31,14 @@
 <script>
   function downloadPDF() {
     const element = document.getElementById('report-section');
+    const kg = document.getElementById("kindergarten").value || "幼儿园";
+    const name = document.getElementById("childName").value.trim() || "姓名";
+    const filename = `${kg}_${name}_测评报告.pdf`;
     const opt = {
       margin:       0.5,
-      filename:     '测评报告.pdf',
+      filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
+      html2canvas:  { scale: 4 },
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
     html2pdf().set(opt).from(element).save();
@@ -78,7 +81,7 @@
       const kg = document.getElementById("kindergarten").value;
       const name = document.getElementById("childName").value.trim();
       const output = document.getElementById("output");
-      output.innerHTML = "";
+      output.innerHTML = ""; document.getElementById("report-section").innerHTML = `<h2>测评报告</h2><p><b>姓名：</b>${name}</p><p><b>幼儿园：</b>${kg}</p>`;
 
       if (!data[kg] || !data[kg][name]) {
         output.textContent = "未找到该儿童的数据。";
@@ -97,13 +100,13 @@
         if (z >= 1) level = "high";
         else if (z <= -1) level = "low";
         const text = `<p><b>${key.replace("Z","")}</b>（Z=${z.toFixed(2)}）：${suggestions[key][level]}</p>`;
-        output.innerHTML += text;
+        output.innerHTML += text; document.getElementById("report-section").innerHTML += text;
       });
 
       // 雷达图绘制
       if (chart) chart.destroy();
       const ctx = document.getElementById("radarChart");
-      chart = new Chart(ctx, {
+      chart = new Chart(ctx, { document.getElementById("report-section").innerHTML += `<canvas id=\"radarPDF\" width=400 height=400></canvas>`; const pdfCtx = document.getElementById("radarPDF").getContext("2d"); new Chart(pdfCtx, {
         type: "radar",
         data: {
           labels: labels.map(k => k.replace("Z","")),
