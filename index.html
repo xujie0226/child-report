@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>儿童发展报告查询</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+    input, select, button { font-size: 16px; padding: 6px; margin: 6px 0; width: 100%; }
+    .result { margin-top: 20px; }
+    canvas { width: 100% !important; height: auto !important; }
+  </style>
+</head>
+<body>
+  <h2>儿童发展报告查询</h2>
+  <label>选择幼儿园：</label>
+  <select id="kindergarten"></select>
+  <label>输入孩子姓名：</label>
+  <input type="text" id="childName" placeholder="例如：张小明">
+  <button onclick="query()">查询</button>
+
+  <div class="result" id="output"></div>
+  <canvas id="radarChart"></canvas>
+
+  <script src="data.js"></script>
+  <script>
+    const suggestions = {
+      "Z记忆力": {
+        high: "记忆力优秀，建议增加图形记忆、倒背故事等挑战性训练。",
+        medium: "记忆力发展正常，可通过规律重复和趣味游戏巩固。",
+        low: "记忆力较弱，建议采用图像辅助、分类法等增强训练。"
+      },
+      "Z语言": {
+        high: "语言能力强，适合讲故事、参与辩论式亲子活动。",
+        medium: "语言能力一般，建议每天固定时间对话与阅读。",
+        low: "语言发展需加强，可使用图画书互动和复述训练。"
+      },
+      "Z数学": {
+        high: "数学理解力好，建议适当引入数字逻辑类游戏。",
+        medium: "数学能力中等，建议多接触分类、排序和数字活动。",
+        low: "数学发展偏弱，建议从数数、图形配对入手训练。"
+      },
+      "Z延迟满足": {
+        high: "具备良好自控力，可引导完成更长时间任务。",
+        medium: "延迟满足能力一般，可通过奖励延时小游戏训练。",
+        low: "自控力待提升，建议从短时等待练习逐步增加。"
+      },
+      "Z灵活性": {
+        high: "认知灵活性佳，适合多任务转移与变换练习。",
+        medium: "灵活性发展正常，建议多玩变换规则类游戏。",
+        low: "灵活性较弱，可从简单规则转变游戏逐步引导。"
+      }
+    };
+
+    let chart;
+
+    function query() {
+      const kg = document.getElementById("kindergarten").value;
+      const name = document.getElementById("childName").value.trim();
+      const output = document.getElementById("output");
+      output.innerHTML = "";
+
+      if (!data[kg] || !data[kg][name]) {
+        output.textContent = "未找到该儿童的数据。";
+        if (chart) chart.destroy();
+        return;
+      }
+
+      const scores = data[kg][name];
+      const labels = Object.keys(scores);
+      const zValues = labels.map(key => scores[key]);
+
+      // 分级与建议
+      labels.forEach(key => {
+        const z = scores[key];
+        let level = "medium";
+        if (z >= 1) level = "high";
+        else if (z <= -1) level = "low";
+        const text = `<p><b>${key.replace("Z","")}</b>（Z=${z.toFixed(2)}）：${suggestions[key][level]}</p>`;
+        output.innerHTML += text;
+      });
+
+      // 雷达图绘制
+      if (chart) chart.destroy();
+      const ctx = document.getElementById("radarChart");
+      chart = new Chart(ctx, {
+        type: "radar",
+        data: {
+          labels: labels.map(k => k.replace("Z","")),
+          datasets: [{
+            label: `${name} 的能力图`,
+            data: zValues,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            r: {
+              suggestedMin: -2,
+              suggestedMax: 2
+            }
+          }
+        }
+      });
+    }
+
+    // 页面初始化：填充幼儿园名称
+    window.onload = function() {
+      const kgSelect = document.getElementById("kindergarten");
+      for (let kg in data) {
+        const opt = document.createElement("option");
+        opt.value = kg;
+        opt.textContent = kg;
+        kgSelect.appendChild(opt);
+      }
+    };
+  </script>
+</body>
+</html>
