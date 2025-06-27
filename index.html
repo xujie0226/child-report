@@ -8,14 +8,36 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="data.js"></script>
-    <style>
-        body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; }
-        select, input, button { margin: 10px 5px; padding: 5px; font-size: 16px; }
-        canvas { max-width: 100%; }
-        .high { color: green; font-weight: bold; }
-        .mid { color: orange; }
-        .low { color: red; font-weight: bold; }
-    </style>
+    
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        padding: 10px;
+        margin: 0;
+        background: #f9f9f9;
+    }
+    h2, h3 { text-align: center; }
+    select, input, button {
+        width: 90%;
+        margin: 10px auto;
+        padding: 10px;
+        font-size: 18px;
+        display: block;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+    button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+    }
+    ul { padding-left: 20px; }
+    canvas { width: 100% !important; height: auto !important; }
+    .high { color: green; font-weight: bold; }
+    .mid { color: orange; }
+    .low { color: red; font-weight: bold; }
+</style>
+
 </head>
 <body>
     <h2>儿童测评结果查询</h2>
@@ -24,7 +46,7 @@
     <label>姓名：</label>
     <input type="text" id="childName" placeholder="请输入姓名">
     <button onclick="search()">查询</button>
-    <button onclick="downloadPDF()">导出PDF报告</button>
+    
 
     <div id="report-section">
         <h3 id="childTitle"></h3>
@@ -46,11 +68,13 @@
         };
 
         let chart = null;
-        function getLevel(z) {
-            if (z >= 1) return "高";
-            if (z <= -1) return "低";
-            return "中";
-        }
+        
+function getLevel(t) {
+    if (t >= 80) return "高";
+    if (t < 60) return "低";
+    return "中";
+}
+
 
         function search() {
             const kg = document.getElementById("kindergarten").value;
@@ -66,15 +90,15 @@
             }
             title.innerHTML = `${kg} - ${name} 的测评报告`;
 
-            const dimensions = ["Z记忆力", "Z语言", "Z数学", "Z延迟满足", "Z灵活性"];
-            const labels = ["记忆力", "语言", "数学", "延迟满足", "灵活性"];
+            const dimensions = ['言语能力', '数学能力', '灵活性能力', '延迟满足能力', '记忆能力'];
+            const labels = ['言语能力', '数学能力', '灵活性能力', '延迟满足能力', '记忆能力'];
             const suggestions = {
-                "Z记忆力": ["可以尝试通过记忆游戏或讲故事提升记忆力", "继续保持，适当挑战复杂任务", "提供结构化帮助，例如重复演练"],
-                "Z语言": ["建议增加语言互动，如共读、讲述", "语言发展良好，建议持续支持", "需要关注语言表达，鼓励多说"],
-                "Z数学": ["可开展分类、数数等早期活动", "数学能力适中，建议游戏化支持", "鼓励使用积木、排序等操作提升数学感知"],
-                "Z延迟满足": ["建议使用等待游戏增强控制力", "有一定延迟满足能力，继续鼓励", "可逐步训练等待和转移注意"],
-                "Z灵活性": ["进行规则变换游戏可促进灵活性", "认知灵活性较好，继续锻炼", "尝试情境变化任务帮助适应"]
-            };
+"言语能力": ["需要关注语言表达，鼓励多说", "语言发展良好，建议持续支持", "建议增加语言互动，如共读、讲述"],
+"数学能力": ["鼓励使用积木、排序等操作提升数学感知", "数学能力适中，建议游戏化支持", "可开展分类、数数等早期活动"],
+"灵活性能力": ["尝试情境变化任务帮助适应", "认知灵活性较好，继续锻炼", "进行规则变换游戏可促进灵活性"],
+"延迟满足能力": ["可逐步训练等待和转移注意", "有一定延迟满足能力，继续鼓励", "建议使用等待游戏增强控制力"],
+"记忆能力": ["提供结构化帮助，例如重复演练", "继续保持，适当挑战复杂任务", "可以尝试通过记忆游戏或讲故事提升记忆力"],
+};
 
             let html = "<ul>";
             let zData = [];
@@ -87,7 +111,7 @@
                 const level = getLevel(z);
                 const suggestion = suggestions[dim][level === "高" ? 1 : level === "中" ? 1 : 2];
                 const cls = level === "高" ? "high" : level === "低" ? "low" : "mid";
-                html += `<li><span class="${cls}">${labels[i]}：${level}</span>（Z=${z.toFixed(2)}）—— ${suggestion}</li>`;
+                html += `<li><span class="${cls}">${labels[i]}：${level}</span>（T=${z.toFixed(2)}）—— ${suggestion}</li>`;
             }
             html += "</ul>";
             output.innerHTML = html;
@@ -99,7 +123,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: "Z分数",
+                        label: "T分数",
                         data: zData,
                         fill: true,
                         pointBackgroundColor: "blue",
@@ -119,20 +143,7 @@
             });
         }
 
-        async function downloadPDF() {
-            const { jsPDF } = window.jspdf;
-            const section = document.getElementById("report-section");
-            const canvas = await html2canvas(section, { scale: 3 });
-            const imgData = canvas.toDataURL("image/jpeg", 1.0);
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const width = pdf.internal.pageSize.getWidth() - 20;
-            const height = canvas.height * width / canvas.width;
-            pdf.addImage(imgData, 'JPEG', 10, 10, width, height);
-
-            const kg = document.getElementById("kindergarten").value || "幼儿园";
-            const name = document.getElementById("childName").value.trim() || "姓名";
-            pdf.save(`${kg}_${name}_测评报告.pdf`);
-        }
+        
     </script>
 </body>
 </html>
