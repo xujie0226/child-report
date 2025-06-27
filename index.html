@@ -1,43 +1,40 @@
-
 <!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
     <title>儿童测评查询</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    <script src="data.js"></script>
-    
-<style>
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        padding: 10px;
-        margin: 0;
-        background: #f9f9f9;
-    }
-    h2, h3 { text-align: center; }
-    select, input, button {
-        width: 90%;
-        margin: 10px auto;
-        padding: 10px;
-        font-size: 18px;
-        display: block;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-    }
-    button {
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-    }
-    ul { padding-left: 20px; }
-    canvas { width: 100% !important; height: auto !important; }
-    .high { color: green; font-weight: bold; }
-    .mid { color: orange; }
-    .low { color: red; font-weight: bold; }
-</style>
-
+    <script src="data_zscores.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0; padding: 10px;
+            background: #f4f6f8;
+            color: #333;
+        }
+        h2, h3 { text-align: center; }
+        select, input, button {
+            width: 90%;
+            margin: 10px auto;
+            padding: 12px;
+            font-size: 18px;
+            display: block;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+        ul { padding-left: 20px; font-size: 16px; }
+        canvas { width: 100% !important; height: auto !important; max-width: 600px; margin: auto; display: block; }
+        .high { color: green; font-weight: bold; }
+        .mid { color: orange; }
+        .low { color: red; font-weight: bold; }
+        #report-section { margin-top: 20px; }
+    </style>
 </head>
 <body>
     <h2>儿童测评结果查询</h2>
@@ -46,7 +43,6 @@
     <label>姓名：</label>
     <input type="text" id="childName" placeholder="请输入姓名">
     <button onclick="search()">查询</button>
-    
 
     <div id="report-section">
         <h3 id="childTitle"></h3>
@@ -54,96 +50,100 @@
         <canvas id="radarChart"></canvas>
     </div>
 
-    <script>
-        const kgSelect = document.getElementById("kindergarten");
-        window.onload = function() {
-            for (const kg in data) {
-                if (kg !== "NaN") {
-                    const option = document.createElement("option");
-                    option.value = kg;
-                    option.text = kg;
-                    kgSelect.appendChild(option);
-                }
+<script>
+    const kgSelect = document.getElementById("kindergarten");
+    window.onload = function() {
+        for (const kg in data) {
+            if (kg !== "NaN") {
+                const option = document.createElement("option");
+                option.value = kg;
+                option.text = kg;
+                kgSelect.appendChild(option);
             }
-        };
+        }
+    };
 
-        let chart = null;
-        
-function getLevel(t) {
-    if (t >= 80) return "高";
-    if (t < 60) return "低";
-    return "中";
-}
+    let chart = null;
 
+    function getLevel(t) {
+        if (t >= 80) return "高";
+        if (t < 60) return "低";
+        return "中";
+    }
 
-        function search() {
-            const kg = document.getElementById("kindergarten").value;
-            const name = document.getElementById("childName").value.trim();
-            const child = data[kg]?.[name];
-            const output = document.getElementById("resultText");
-            const title = document.getElementById("childTitle");
-            if (!child) {
-                output.innerHTML = "<p style='color:red;'>未找到该儿童数据，请检查输入。</p>";
-                title.innerHTML = "";
-                if (chart) chart.destroy();
-                return;
-            }
-            title.innerHTML = `${kg} - ${name} 的测评报告`;
+    function search() {
+        const kg = document.getElementById("kindergarten").value;
+        const name = document.getElementById("childName").value.trim();
+        const child = data[kg]?.[name];
+        const output = document.getElementById("resultText");
+        const title = document.getElementById("childTitle");
 
-            const dimensions = ['言语能力', '数学能力', '灵活性能力', '延迟满足能力', '记忆能力'];
-            const labels = ['言语能力', '数学能力', '灵活性能力', '延迟满足能力', '记忆能力'];
-            const suggestions = {
-"言语能力": ["需要关注语言表达，鼓励多说", "语言发展良好，建议持续支持", "建议增加语言互动，如共读、讲述"],
-"数学能力": ["鼓励使用积木、排序等操作提升数学感知", "数学能力适中，建议游戏化支持", "可开展分类、数数等早期活动"],
-"灵活性能力": ["尝试情境变化任务帮助适应", "认知灵活性较好，继续锻炼", "进行规则变换游戏可促进灵活性"],
-"延迟满足能力": ["可逐步训练等待和转移注意", "有一定延迟满足能力，继续鼓励", "建议使用等待游戏增强控制力"],
-"记忆能力": ["提供结构化帮助，例如重复演练", "继续保持，适当挑战复杂任务", "可以尝试通过记忆游戏或讲故事提升记忆力"],
-};
-
-            let html = "<ul>";
-            let zData = [];
-
-            for (let i = 0; i < dimensions.length; i++) {
-                const dim = dimensions[i];
-                const z = child[dim];
-                if (typeof z !== "number") continue;
-                zData.push(z.toFixed(2));
-                const level = getLevel(z);
-                const suggestion = suggestions[dim][level === "高" ? 1 : level === "中" ? 1 : 2];
-                const cls = level === "高" ? "high" : level === "低" ? "low" : "mid";
-                html += `<li><span class="${cls}">${labels[i]}：${level}</span>（T=${z.toFixed(2)}）—— ${suggestion}</li>`;
-            }
-            html += "</ul>";
-            output.innerHTML = html;
-
+        if (!child) {
+            output.innerHTML = "<p style='color:red;'>未找到该儿童数据，请检查输入。</p>";
+            title.innerHTML = "";
             if (chart) chart.destroy();
-            const ctx = document.getElementById("radarChart").getContext("2d");
-            chart = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: "T分数",
-                        data: zData,
-                        fill: true,
-                        pointBackgroundColor: "blue",
-                        borderColor: "blue"
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        r: {
-                            min: -3,
-                            max: 3,
-                            ticks: { stepSize: 1 }
-                        }
-                    }
-                }
-            });
+            return;
         }
 
-        
-    </script>
+        title.innerHTML = `${kg} - ${name} 的测评报告`;
+
+        const dimensions = ['言语能力', '数学能力', '灵活性能力', '延迟满足能力', '记忆能力'];
+        const labels = [...dimensions];
+        const suggestions = {
+            "言语能力": ["需要关注语言表达，鼓励多说", "语言发展良好，建议持续支持", "建议增加语言互动，如共读、讲述"],
+            "数学能力": ["鼓励使用积木、排序等操作提升数学感知", "数学能力适中，建议游戏化支持", "可开展分类、数数等早期活动"],
+            "灵活性能力": ["尝试情境变化任务帮助适应", "认知灵活性较好，继续锻炼", "进行规则变换游戏可促进灵活性"],
+            "延迟满足能力": ["可逐步训练等待和转移注意", "有一定延迟满足能力，继续鼓励", "建议使用等待游戏增强控制力"],
+            "记忆能力": ["提供结构化帮助，例如重复演练", "继续保持，适当挑战复杂任务", "可以尝试通过记忆游戏或讲故事提升记忆力"]
+        };
+
+        let html = "<ul>";
+        let tData = [];
+
+        for (let i = 0; i < dimensions.length; i++) {
+            const dim = dimensions[i];
+            const t = child[dim];
+            if (typeof t !== "number") continue;
+            tData.push(t);
+            const level = getLevel(t);
+            const suggestion = suggestions[dim][level === "高" ? 2 : level === "中" ? 1 : 0];
+            const cls = level === "高" ? "high" : level === "低" ? "low" : "mid";
+            html += `<li><span class="${cls}">${labels[i]}：${level}</span>（T=${t.toFixed(2)}）—— ${suggestion}</li>`;
+        }
+        html += "</ul>";
+        output.innerHTML = html;
+
+        if (chart) chart.destroy();
+        const ctx = document.getElementById("radarChart").getContext("2d");
+        chart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "T分数",
+                    data: tData,
+                    fill: true,
+                    backgroundColor: "rgba(54, 162, 235, 0.2)",
+                    borderColor: "rgba(54, 162, 235, 1)",
+                    pointBackgroundColor: "blue"
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        min: 40,
+                        max: 100,
+                        ticks: { stepSize: 10 },
+                        pointLabels: { font: { size: 14 } }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { font: { size: 14 } } }
+                }
+            }
+        });
+    }
+</script>
 </body>
 </html>
