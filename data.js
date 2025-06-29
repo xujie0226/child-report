@@ -1,153 +1,74 @@
-const data = {
-  "一二三幸福力": {
-    "杨铖蹊": {
-      "言语能力": 91.95,
-      "数学能力": 69.53,
-      "灵活性能力": 87.62,
-      "延迟满足能力": 79.31,
-      "记忆能力": 94.75
-    },
-    "王俊杰": {
-      "言语能力": 78.46,
-      "数学能力": 83.09,
-      "灵活性能力": 87.62,
-      "延迟满足能力": 91.77,
-      "记忆能力": 91.01
-    },
-    "耿靖浩": {
-      "言语能力": 73.97,
-      "数学能力": 65.01,
-      "灵活性能力": 68.93,
-      "延迟满足能力": 79.31,
-      "记忆能力": 79.8
-    },
-    "李起贤": {
-      "言语能力": 73.97,
-      "数学能力": 74.05,
-      "灵活性能力": 73.61,
-      "延迟满足能力": 66.84,
-      "记忆能力": 79.8
-    },
-    "刘连文": {
-      "言语能力": 76.21,
-      "数学能力": 69.53,
-      "灵活性能力": 87.62,
-      "延迟满足能力": 66.84,
-      "记忆能力": 76.07
-    },
-    "吴默": {
-      "言语能力": 91.95,
-      "数学能力": 92.13,
-      "灵活性能力": 73.61,
-      "延迟满足能力": 66.84,
-      "记忆能力": 91.01
-    },
-    "高戈然": {
-      "言语能力": 94.2,
-      "数学能力": 83.09,
-      "灵活性能力": 73.61,
-      "延迟满足能力": 79.31,
-      "记忆能力": 68.59
-    },
-    "孙启茗": {
-      "言语能力": 71.72,
-      "数学能力": 92.13,
-      "灵活性能力": 73.61,
-      "延迟满足能力": 91.77,
-      "记忆能力": 94.75
-    },
-    "霍奕佟": {
-      "言语能力": 89.7,
-      "数学能力": 92.13,
-      "灵活性能力": 73.61,
-      "延迟满足能力": 79.31,
-      "记忆能力": 87.28
-    },
-    "龚小曦": {
-      "言语能力": 80.71,
-      "数学能力": 74.05,
-      "灵活性能力": 73.61,
-      "延迟满足能力": 91.77,
-      "记忆能力": 68.59
-    },
-    "张锶琪": {
-      "言语能力": 58.23,
-      "数学能力": 74.05,
-      "灵活性能力": 101.64,
-      "延迟满足能力": 79.31,
-      "记忆能力": 72.33
-    },
-    "浦彧": {
-      "言语能力": 78.46,
-      "数学能力": 78.57,
-      "灵活性能力": 101.64,
-      "延迟满足能力": 91.77,
-      "记忆能力": 72.33
-    },
-    "李昀泽": {
-      "言语能力": 78.46,
-      "数学能力": 87.61,
-      "灵活性能力": 78.28,
-      "延迟满足能力": 79.31,
-      "记忆能力": 94.75
-    },
-    "毕津铭": {
-      "言语能力": 67.22,
-      "数学能力": 60.49,
-      "灵活性能力": 73.61,
-      "延迟满足能力": NaN,
-      "记忆能力": 68.59
-    },
-    "王艺潼": {
-      "言语能力": 89.7,
-      "数学能力": 83.09,
-      "灵活性能力": 78.28,
-      "延迟满足能力": 79.31,
-      "记忆能力": 76.07
-    },
-    "武济禾": {
-      "言语能力": 94.2,
-      "数学能力": 92.13,
-      "灵活性能力": 92.3,
-      "延迟满足能力": 91.77,
-      "记忆能力": 76.07
-    },
-    "王思泽": {
-      "言语能力": 78.46,
-      "数学能力": 92.13,
-      "灵活性能力": 73.61,
-      "延迟满足能力": 91.77,
-      "记忆能力": 87.28
-    },
-    "洪烁鹏": {
-      "言语能力": 82.96,
-      "数学能力": 74.05,
-      "灵活性能力": 73.61,
-      "延迟满足能力": 66.84,
-      "记忆能力": 76.07
-    },
-    "朱煜程": {
-      "言语能力": 69.47,
-      "数学能力": 83.09,
-      "灵活性能力": 73.61,
-      "延迟满足能力": 66.84,
-      "记忆能力": 64.86
+
+let data = {};
+fetch('data_tscore.json')
+  .then(response => response.json())
+  .then(json => {
+    data = json;
+    const kgSelect = document.getElementById("kindergarten");
+    for (const kg in data) {
+      const option = document.createElement("option");
+      option.value = kg;
+      option.text = kg;
+      kgSelect.appendChild(option);
     }
-  },
-  "nan": {
-    "平均数": {
-      "言语能力": 80.0,
-      "数学能力": NaN,
-      "灵活性能力": NaN,
-      "延迟满足能力": 80.0,
-      "记忆能力": 80.0
-    },
-    "标准差": {
-      "言语能力": NaN,
-      "数学能力": NaN,
-      "灵活性能力": NaN,
-      "延迟满足能力": NaN,
-      "记忆能力": 80.0
+  });
+
+let chart = null;
+
+function search() {
+  const kg = document.getElementById("kindergarten").value;
+  const name = document.getElementById("childName").value.trim();
+  const child = data[kg]?.[name];
+  const title = document.getElementById("childTitle");
+  const output = document.getElementById("reportText");
+  if (!child) {
+    title.innerHTML = "";
+    output.innerHTML = "<p style='color:red;'>未找到该儿童数据，请检查输入。</p>";
+    if (chart) chart.destroy();
+    return;
+  }
+
+  title.innerHTML = `${kg} - ${name} 的测评报告`;
+
+  const labels = [], scores = [], html = [];
+  for (const key in child) {
+    if (key.endsWith("能力")) {
+      const dim = key.replace("能力", "");
+      const t = child[key];
+      const level = child[dim + "等级"];
+      const suggestion = child[dim + "建议"];
+      const cls = level === "高" ? "high" : level === "低" ? "low" : "mid";
+      labels.push(dim);
+      scores.push(t);
+      html.push(`<li><span class="${cls}">${dim}：${level}</span>（T=${t}）<br>${suggestion}</li>`);
     }
   }
-};
+  output.innerHTML = `<ul>${html.join('')}</ul>`;
+
+  if (chart) chart.destroy();
+  const ctx = document.getElementById("radarChart").getContext("2d");
+  chart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'T分数',
+        data: scores,
+        fill: true,
+        borderColor: 'blue',
+        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+        pointBackgroundColor: 'blue'
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          min: 40,
+          max: 100,
+          ticks: { stepSize: 10 }
+        }
+      }
+    }
+  });
+}
